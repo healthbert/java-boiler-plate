@@ -1,0 +1,103 @@
+buildscript {
+	ext {
+		springBootVersion = '1.5.1.RELEASE'
+	}
+	repositories {
+		mavenCentral()
+	}
+	dependencies {
+		classpath("org.springframework.boot:spring-boot-gradle-plugin:${springBootVersion}")
+		classpath 'de.undercouch:gradle-download-task:3.1.2'
+	}
+}
+
+apply plugin: 'java'
+apply plugin: 'checkstyle'
+apply plugin: "de.undercouch.download"
+apply plugin: 'org.springframework.boot'
+
+jar {
+	baseName = 'product-service'
+	version = '0.0.1'
+}
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+def checkstyleFilePath = "${project.projectDir}/checkstyle.xml"
+
+repositories {
+	mavenCentral()
+	maven { url "https://repo.spring.io/snapshot" }
+	maven { url "https://repo.spring.io/milestone" }
+}
+
+/*
+ * Custom tasks definition
+ */
+
+task checkCheckstyleExists {
+	doLast {
+		def file = new File("$checkstyleFilePath")
+		if (!file.exists()) {
+			download {
+				src 'https://s3.amazonaws.com/hc-devops/utils/checkstyle/java/checkstyle.xml'
+				dest "$checkstyleFilePath"
+			}
+		}
+	}
+}
+
+/*
+ * End Custom tasks definition
+ */
+
+dependencies {
+	// Cache
+	compile('org.springframework.boot:spring-boot-starter-cache')
+	//compile('org.springframework.boot:spring-boot-starter-data-redis')
+	// end Cache
+	// Config
+	compile('org.springframework.cloud:spring-cloud-starter-config')
+	// end Config
+	// JPA
+	//compile('org.springframework.boot:spring-boot-starter-data-jpa')
+	//runtime('mysql:mysql-connector-java')
+	// end JPA
+	// Web
+	compile("org.springframework.boot:spring-boot-starter-web") {
+		exclude module: "spring-boot-starter-tomcat"
+	}
+	compile("org.springframework.boot:spring-boot-starter-jetty")
+	// end Web
+	// Test
+	testCompile('org.springframework.boot:spring-boot-starter-test')
+	// end Test
+	// Raygun
+	compile (
+			'com.mindscapehq:core:[2.0.0,3.0.0)',
+			'com.mindscapehq:raygun4java:[2.0.0,3.0.0)',
+			'com.mindscapehq:webprovider:[2.0.0,3.0.0)',
+	)
+	// End Raygun
+}
+
+dependencyManagement {
+	imports {
+		mavenBom "org.springframework.cloud:spring-cloud-dependencies:Dalston.BUILD-SNAPSHOT"
+	}
+}
+
+checkstyle {
+	configFile = new File("$checkstyleFilePath")
+	toolVersion = '7.5'
+	ignoreFailures = false
+}
+
+tasks.withType(Checkstyle) {
+	reports {
+		xml.enabled false
+		html.enabled true
+	}
+}
+
+check.dependsOn(checkCheckstyleExists)

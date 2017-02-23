@@ -1,0 +1,3 @@
+## Spring resources
+
+Keep here all Spring framework related resources, for example: Beans definitions, Runners, etc ...
